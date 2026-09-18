@@ -65,8 +65,9 @@ APP="build/bin/git-ai-tool.app"
 echo "== 产物架构：$(lipo -archs "$APP/Contents/MacOS/git-ai-tool") =="
 
 # ---- 打包绿色 zip ----
-STAGE="build/.mac-staging"
-rm -rf "$STAGE"; mkdir -p "$STAGE"
+# ditto 不支持一次压缩多个源，所以把 .app + 说明放进以包名命名的顶层文件夹，单源压缩
+STAGE="build/.mac-staging/git-ai-tool-v${VERSION}-mac-${ARCH}"
+rm -rf "build/.mac-staging"; mkdir -p "$STAGE"
 cp -R "$APP" "$STAGE/Git AI Tool.app"
 
 # 使用说明（UTF-8，mac 记事本/文本编辑可正常打开）
@@ -96,9 +97,9 @@ ZIP_NAME="git-ai-tool-v${VERSION}-mac-${ARCH}.zip"
 mkdir -p build/dist
 rm -f "build/dist/$ZIP_NAME" "build/dist/$ZIP_NAME.sha256"
 echo "== 压缩 $ZIP_NAME =="
-( cd "$STAGE" && ditto -c -k --sequesterRsrc --keepParent "Git AI Tool.app" "使用说明.txt" "../dist/$ZIP_NAME" )
+( cd "build/.mac-staging" && ditto -c -k --sequesterRsrc --keepParent "git-ai-tool-v${VERSION}-mac-${ARCH}" "../dist/$ZIP_NAME" )
 ( cd build/dist && shasum -a 256 "$ZIP_NAME" > "$ZIP_NAME.sha256" )
 
 SIZE=$(du -h "build/dist/$ZIP_NAME" | cut -f1)
 echo "== 完成：build/dist/$ZIP_NAME ($SIZE) =="
-[[ $KEEP -eq 1 ]] || rm -rf "$STAGE"
+[[ $KEEP -eq 1 ]] || rm -rf "build/.mac-staging"
