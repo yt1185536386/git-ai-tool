@@ -264,8 +264,16 @@ func defaultConfig() Config {
 	}
 }
 
-// configFilePath 配置文件路径：固定放在 exe 同级目录，绿色版直接连 exe 一起拷贝即可
+// configFilePath 配置文件路径。
+// Windows：固定 exe 同级目录，绿色版直接连 exe 一起拷贝即可。
+// macOS：.app 包内的 exe 目录（Contents/MacOS）受代码签名与 Gatekeeper 约束，
+// 应用更新/重签后包内文件不可靠，改放用户配置目录（~/Library/Application Support/GitAITool/）。
 func configFilePath() string {
+	if runtime.GOOS == "darwin" {
+		if dir, err := os.UserConfigDir(); err == nil {
+			return filepath.Join(dir, "GitAITool", "config.json")
+		}
+	}
 	exe, err := os.Executable()
 	if err != nil {
 		return "config.json"
