@@ -1,0 +1,55 @@
+# 云端打包 macOS 版：GitHub 免费提供 macOS 构建机，无需本地有 Mac
+#
+# 触发方式：
+#   1. 手动：GitHub 仓库页 → Actions → "Build macOS" → Run workflow（可选架构）
+#   2. 自动：推送 v 开头的 tag（如 git tag v1.1.1 && git push --tags）
+#      会额外创建 GitHub Release 并附上 zip
+#
+# 产物：Actions 运行页面的 Artifacts 里下载
+#       git-ai-tool-v<版本>-mac-<架构>.zip
+
+name: Build macOS
+
+on:
+  workflow_dispatch:
+    inputs:
+      arch:
+        description: '架构（universal / arm64 / amd64）'
+        required: false
+        default: 'universal'
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build & pack (buildMac.sh)
+        run: ./buildMac.sh -arch "${{ github.event.inputs.arch || 'universal' }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-zip
+          path: build/dist/git-ai-tool-v*-mac-*.zip
+          if-no-files-found: error
+
+      - name: Create release (tag push only)
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" build/dist/git-ai-tool-v*-mac-*.zip --generate-notes
