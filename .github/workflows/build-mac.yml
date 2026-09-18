@@ -26,13 +26,15 @@ permissions:
 
 jobs:
   build-mac:
-    runs-on: macos-latest
+    # macos-14（Sonoma）：macos-15 的 dyld 会拒绝 Go 1.22 编译的无 LC_UUID 二进制，
+    # wails CLI 一起动就 Abort trap: 6；固定 14 + 新版 Go 双保险
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: '1.24.x'
 
       - uses: actions/setup-node@v4
         with:
